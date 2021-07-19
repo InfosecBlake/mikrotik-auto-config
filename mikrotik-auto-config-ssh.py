@@ -17,7 +17,7 @@ def run_command(cmd_str, hostname, port, username, password, nbytes=4096):
         if session.recv_stderr_ready():
             stderr_data.append(session.recv_stderr(nbytes))
         if session.exit_status_ready():
-                         break
+            break
 
     print('exit status: ', session.recv_exit_status())
     print(''.join(stdout_data))
