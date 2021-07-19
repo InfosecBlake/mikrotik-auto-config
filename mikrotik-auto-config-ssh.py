@@ -1,14 +1,6 @@
-
 from tkinter import *
 import paramiko
 
-def main():
-    root = Tk()
-    root.geometry("750x315")
-    root.title("Lets get configuring!")
-    root.eval('tk::PlaceWindow . center')
-    init_tk(root)
-    root.mainloop()
 
 def run_command(cmd_str, hostname, port, username, password, nbytes=4096):
     client = paramiko.Transport((hostname, port))
@@ -36,16 +28,27 @@ def run_command(cmd_str, hostname, port, username, password, nbytes=4096):
 
 def gen_cmd_str_ip(ip, interface):
     return f"ip address add address={ip} interface={interface}"
+
+
 def gen_cmd_str_gw(gateway):
     return f"ip route add dst-address=0.0.0.0/0 gateway={gateway}"
+
+
 def gen_cmd_str_id(identity):
     return f"system identity set name={identity}"
+
+
 def gen_cmd_str_wpa(wpa):
     return f"interface wireless security-profiles add name=WPA mode=dynamic-keys authentication-types=wpa2-psk wpa2-pre-shared-key={wpa}"
+
+
 def gen_cmd_str_ssid1(ssid1):
     return f"interface wireless set ssid={ssid1} wlan1"
+
+
 def gen_cmd_str_ssid2(ssid2):
     return f"interface wireless set ssid={ssid2} wlan2"
+
 
 def init_tk(root):
     def clear_entries():
@@ -122,6 +125,15 @@ def init_tk(root):
     clear_button.grid(row=9, column=1, sticky=E, pady=10, padx=5)
 
 
+def main():
+    root = Tk()
+    root.geometry("750x315")
+    root.title("Lets get configuring!")
+    root.eval('tk::PlaceWindow . center')
+    init_tk(root)
+    root.mainloop()
+
+
 if __name__ == '__main__':
-     main()
+    main()
 
