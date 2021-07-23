@@ -35,4 +35,4 @@ If you would like to become a contributer please open an issue. For changes, ple
 Please make sure to update tests as appropriate.
 
 ## License
-BSD 3-Clause License
+MIT License
