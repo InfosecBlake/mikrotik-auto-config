@@ -1,6 +1,7 @@
 from tkinter import *
 import paramiko
-
+from tkinter import filedialog
+import time
 
 def run_command(cmd_str, hostname, port, username, password, nbytes=4096):
     client = paramiko.Transport((hostname, port))
@@ -20,11 +21,33 @@ def run_command(cmd_str, hostname, port, username, password, nbytes=4096):
             break
 
     print('exit status: ', session.recv_exit_status())
-    print(''.join(stdout_data))
-    print(''.join(stderr_data))
+    #print(''.join(stdout_data))
+    #print(''.join(stderr_data))
 
     session.close()
     client.close()
+
+
+def sftp_upload_config(config_file, hostname, port, username, password): #function for upload config/script files
+    client = paramiko.Transport((hostname, port))
+    client.connect(username=username, password=password)
+    sftp = paramiko.SFTPClient.from_transport(client)
+    sftp.put(config_file, "flash/config.rsc")
+    sftp.close()
+    print('SFTP Upload Complete.')
+
+
+def sftp_upload_firmware(fw_file, hostname, port, username, password): #function for upload config/script files
+    client = paramiko.Transport((hostname, port))
+    client.connect(username=username, password=password)
+    sftp = paramiko.SFTPClient.from_transport(client)
+    sftp.put(fw_file, "firmware.npk")
+    sftp.close()
+    print('SFTP Upload Complete.')
+
+
+    print('exit status: ', session.recv_exit_status())
+
 
 def gen_cmd_str_ip(ip, interface):
     return f"ip address add address={ip} interface={interface}"
@@ -51,9 +74,44 @@ def gen_cmd_str_ssid2(ssid2):
 
 
 def init_tk(root):
+    def select_config():
+        filename = filedialog.askopenfilename()
+        config_entries.insert('0.0', filename)
+    def upload_config():
+        print('Config Uploaded')
+        config_name = config_entries.get('0.0', 'end')
+        formatted_config_name = config_name.strip()
+        sftp_upload_config((formatted_config_name), entries['mgmt_ip'].get(), int(entries['port'].get()), entries['user'].get(), entries['pass'].get())
+    def select_firmware():
+        firmware = filedialog.askopenfilename()
+        firmware_entries.insert('0.0', firmware)
+    def upload_firmware():
+        fw_name = firmware_entries.get('0.0', 'end')
+        formatted_fw_name = fw_name.strip()
+        sftp_upload_firmware((formatted_fw_name), entries['mgmt_ip'].get(), int(entries['port'].get()), entries['user'].get(), entries['pass'].get())
+        print('Firmware Uploaded')  
+    def reboot_device():
+        reboot_command = []
+        reboot_cmd = 'system reboot'
+        reboot_command.append(reboot_cmd)
+        reboot_cmd = 'y'
+        reboot_command.append(reboot_cmd)
+        format_reboot = "\n".join(reboot_command)
+        run_command(format_reboot, entries['mgmt_ip'].get(), int(entries['port'].get()), entries['user'].get(), entries['pass'].get())
+        print('Device is rebooting')
+    def reset_config():
+        reset_command = []
+        reset_cmd = 'system reset-configuration run-after-reset=flash/config.rsc no-defaults=yes'
+        reset_command.append(reset_cmd)
+        reset_cmd = 'y'
+        reset_command.append(reset_cmd)
+        format_reset = "\n".join(reset_command)
+        run_command(format_reset, entries['mgmt_ip'].get(), int(entries['port'].get()), entries['user'].get(), entries['pass'].get())
     def clear_entries():
         for key, entry, in entries.items():
             entry.delete(0, 'end')
+        config_entries.delete('0.0', 'end')
+        firmware_entries.delete('0.0', 'end')
     def send_commands():
         all_commands = []
         cmd_str = gen_cmd_str_ip(entries['ip'].get(), interface_select.get())
@@ -70,7 +128,7 @@ def init_tk(root):
         all_commands.append(cmd_str)
         formatted_commands = "\n".join(all_commands)
         run_command(formatted_commands, entries['mgmt_ip'].get(), int(entries['port'].get()), entries['user'].get(), entries['pass'].get())
-        
+    
     entries = {}
     mgmt_ip_label = Label(root, text='Management IP Address:', font=('calibre', 10, 'bold'))
     entries['mgmt_ip'] = Entry(root, justify='center', font=('calibre', 10))
@@ -123,16 +181,35 @@ def init_tk(root):
     submit_button.grid(row=9, column=2, sticky=W, pady=10, padx=5)
     clear_button = Button(root, text='Clear', command=clear_entries)
     clear_button.grid(row=9, column=1, sticky=E, pady=10, padx=5)
-
+    config_entries = Text(root, height=1, width=20, font=('calibre', 10))
+    config_entries.grid(row=3, column=3, sticky=N, columnspan=2, pady=2, padx=5)
+    config_label = Label(root, text='Upload Configuration File:', font=('calibre', 10, 'bold'))
+    config_label.grid(row=2, column=2, sticky=N, pady=2, padx=5)
+    config_button = Button(root, text='Select', command=select_config)
+    config_button.grid(row=3, column=2, sticky=W, pady=2, padx=5)
+    upload_button = Button(root, text='Upload', command=upload_config)
+    upload_button.grid(row=3, column=2, sticky=E, pady=2, padx=5)
+    firmware_entries = Text(root, height=1, width=20, font=('calibre', 10))
+    firmware_entries.grid(row=5, column=3, sticky=N, columnspan=2, pady=2, padx=5)
+    firmware_label = Label(root, text='Upload Firmware File:', font=('calibre', 10, 'bold'))
+    firmware_label.grid(row=4, column=2, sticky=W, pady=2, padx=5)
+    firmware_select_button = Button(root, text='Select', command=select_firmware)
+    firmware_select_button.grid(row=5, column=2, sticky=W, pady=2, padx=5)
+    firmware_upload_button = Button(root, text='Upload', command=upload_firmware)
+    firmware_upload_button.grid(row=5, column=2, sticky=E, pady=2, padx=5)
+    reboot_button = Button(root, text='Reboot', command=reboot_device)
+    reboot_button.grid(row=6, column=3, sticky=N, pady=2, padx=5)
+    reset_button = Button(root, text='Run', command=reset_config)
+    reset_button.grid(row=4, column=3, sticky=N, pady=2, padx=5)
 
 def main():
     root = Tk()
-    root.geometry("750x315")
+    root.geometry("825x315")
     root.title("Lets get configuring!")
     root.eval('tk::PlaceWindow . center')
     init_tk(root)
     root.mainloop()
-
+    paramiko.util.log_to_file('paramiko.log')
 
 if __name__ == '__main__':
     main()
