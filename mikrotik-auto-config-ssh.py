@@ -44,7 +44,10 @@ def sftp_upload_firmware(fw_file, hostname, port, username, password):
     sftp.put(fw_file, "firmware.npk")
     sftp.close()
     print('SFTP Upload Complete.')
+<<<<<<< HEAD
     print('exit status: ', session.recv_exit_status())
+=======
+>>>>>>> 2d5301c32e3ee54579a5c053cc1ab031047d5e94
 
 
 def gen_cmd_str_ip(ip, interface):
