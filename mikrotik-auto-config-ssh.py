@@ -1,7 +1,8 @@
-from tkinter import *
 import paramiko
+
+from tkinter import *
 from tkinter import filedialog
-import time
+
 
 def run_command(cmd_str, hostname, port, username, password, nbytes=4096):
     client = paramiko.Transport((hostname, port))
@@ -21,14 +22,13 @@ def run_command(cmd_str, hostname, port, username, password, nbytes=4096):
             break
 
     print('exit status: ', session.recv_exit_status())
-    #print(''.join(stdout_data))
-    #print(''.join(stderr_data))
+
 
     session.close()
     client.close()
 
 
-def sftp_upload_config(config_file, hostname, port, username, password): #function for upload config/script files
+def sftp_upload_config(config_file, hostname, port, username, password):
     client = paramiko.Transport((hostname, port))
     client.connect(username=username, password=password)
     sftp = paramiko.SFTPClient.from_transport(client)
@@ -37,15 +37,13 @@ def sftp_upload_config(config_file, hostname, port, username, password): #functi
     print('SFTP Upload Complete.')
 
 
-def sftp_upload_firmware(fw_file, hostname, port, username, password): #function for upload config/script files
+def sftp_upload_firmware(fw_file, hostname, port, username, password):
     client = paramiko.Transport((hostname, port))
     client.connect(username=username, password=password)
     sftp = paramiko.SFTPClient.from_transport(client)
     sftp.put(fw_file, "firmware.npk")
     sftp.close()
     print('SFTP Upload Complete.')
-
-
     print('exit status: ', session.recv_exit_status())
 
 
@@ -129,6 +127,9 @@ def init_tk(root):
         formatted_commands = "\n".join(all_commands)
         run_command(formatted_commands, entries['mgmt_ip'].get(), int(entries['port'].get()), entries['user'].get(), entries['pass'].get())
     
+    root.geometry("825x315")
+    root.title("Lets get configuring!")
+    root.eval('tk::PlaceWindow . center')
     entries = {}
     mgmt_ip_label = Label(root, text='Management IP Address:', font=('calibre', 10, 'bold'))
     entries['mgmt_ip'] = Entry(root, justify='center', font=('calibre', 10))
@@ -153,7 +154,7 @@ def init_tk(root):
     interface_list = ['ether1', 'ether2', 'ether3', 'ether4', 'ether5', 'ether6', 'ether7', 'ether8', 'ether9', 'ether10', 'wlan1', 'wlan2', 'sfp1', 'sfp+plus1']
     interface_select = StringVar(root)
     interface_select.set(interface_list[0])
-    interface_label = Label(root, text = 'WAN Interface:', font=('calibre', 10, 'bold')) #this should be a drop down
+    interface_label = Label(root, text = 'WAN Interface:', font=('calibre', 10, 'bold'))
     interface_drop = OptionMenu(root, interface_select, *interface_list)
     interface_label.grid(row=3, column=0, sticky=W, pady=2, padx=5)
     interface_drop.grid(row=3, column=1, pady=2)
@@ -169,11 +170,11 @@ def init_tk(root):
     entries['wpa'] = Entry(root, justify='center', show='*', font=('calibre', 10))
     wpa_label.grid(row = 6, column=0, sticky=W, pady=2, padx=5)
     entries['wpa'].grid(row=6, column=1, pady=2)
-    ssid1_label = Label(root, text='2.4Ghz SSID:', font=('calibre', 10, 'bold')) #ssid for 2.4Ghz
+    ssid1_label = Label(root, text='2.4Ghz SSID:', font=('calibre', 10, 'bold'))
     entries['ssid1'] = Entry(root, justify='center', font=('calibre', 10))
     ssid1_label.grid(row=7, column=0, sticky=W, pady=2, padx=5)
     entries['ssid1'].grid(row=7, column=1, pady=2)
-    ssid2_label = Label(root, text='5Ghz SSID:', font=('calibre', 10, 'bold')) #ssid for 5Ghz
+    ssid2_label = Label(root, text='5Ghz SSID:', font=('calibre', 10, 'bold'))
     entries['ssid2'] = Entry(root, justify='center', font=('calibre', 10))
     ssid2_label.grid(row=8, column=0, sticky=W, pady=2, padx=5)
     entries['ssid2'].grid(row=8, column=1, pady=2)
@@ -204,12 +205,9 @@ def init_tk(root):
 
 def main():
     root = Tk()
-    root.geometry("825x315")
-    root.title("Lets get configuring!")
-    root.eval('tk::PlaceWindow . center')
     init_tk(root)
     root.mainloop()
-    paramiko.util.log_to_file('paramiko.log')
+    paramiko.util.log_to_file('paramiko.log', level='INFO')
 
 if __name__ == '__main__':
     main()
