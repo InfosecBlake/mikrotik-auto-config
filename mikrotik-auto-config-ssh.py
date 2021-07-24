@@ -46,9 +46,6 @@ def sftp_upload_firmware(fw_file, hostname, port, username, password): #function
     print('SFTP Upload Complete.')
 
 
-    print('exit status: ', session.recv_exit_status())
-
-
 def gen_cmd_str_ip(ip, interface):
     return f"ip address add address={ip} interface={interface}"
 
