@@ -1,3 +1,4 @@
-# ingnore all logs
+# ignore all logs
 *.log
-
+# ignore notes.md
+notes.md
