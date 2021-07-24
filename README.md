@@ -30,8 +30,6 @@ python mikrotik-auto-config-ssh.py
 
 - Ability to upload baseline configurations and scripts - **Complete**
 - Ability to update and reboot devices - **Complete**
-- Ability to upload baseline configurations and scripts
-- Ability to update and reboot devices
 - Device detection, think similar to CDP neighbors
 - Dynamic interface population
 
