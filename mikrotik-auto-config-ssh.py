@@ -11,6 +11,7 @@ def run_command(cmd_str, hostname, port, username, password, nbytes=4096):
     stdout_data = []
     stderr_data = []
     session = client.open_channel(kind='session')
+
     session.exec_command(cmd_str)
 
     while True:
@@ -23,7 +24,6 @@ def run_command(cmd_str, hostname, port, username, password, nbytes=4096):
 
     print('exit status: ', session.recv_exit_status())
 
-
     session.close()
     client.close()
 
@@ -34,7 +34,7 @@ def sftp_upload_config(config_file, hostname, port, username, password):
     sftp = paramiko.SFTPClient.from_transport(client)
     sftp.put(config_file, "flash/config.rsc")
     sftp.close()
-    print('SFTP Upload Complete.')
+    print('SFTP Config File Upload Complete.')
 
 
 def sftp_upload_firmware(fw_file, hostname, port, username, password):
@@ -43,7 +43,7 @@ def sftp_upload_firmware(fw_file, hostname, port, username, password):
     sftp = paramiko.SFTPClient.from_transport(client)
     sftp.put(fw_file, "firmware.npk")
     sftp.close()
-    print('SFTP Upload Complete.')
+    print('SFTP Firmware Upload Complete.')
 
 
 def gen_cmd_str_ip(ip, interface):
@@ -74,19 +74,23 @@ def init_tk(root):
     def select_config():
         filename = filedialog.askopenfilename()
         config_entries.insert('0.0', filename)
+        debug_box.insert(END, ('\nConfig File Selected: ' + filename))
     def upload_config():
-        print('Config Uploaded')
         config_name = config_entries.get('0.0', 'end')
         formatted_config_name = config_name.strip()
         sftp_upload_config((formatted_config_name), entries['mgmt_ip'].get(), int(entries['port'].get()), entries['user'].get(), entries['pass'].get())
+        print('Config Uploading...')
+        debug_box.insert(END, 'Config Uploaded\n')
     def select_firmware():
         firmware = filedialog.askopenfilename()
         firmware_entries.insert('0.0', firmware)
+        debug_box.insert(END, ('\nFirmware File Selected: ' + firmware))
     def upload_firmware():
         fw_name = firmware_entries.get('0.0', 'end')
         formatted_fw_name = fw_name.strip()
         sftp_upload_firmware((formatted_fw_name), entries['mgmt_ip'].get(), int(entries['port'].get()), entries['user'].get(), entries['pass'].get())
-        print('Firmware Uploaded')  
+        print('Firmware Uploaded') 
+        debug_box.insert(END, '\nFirmware uploaded')
     def reboot_device():
         reboot_command = []
         reboot_cmd = 'system reboot'
@@ -96,6 +100,7 @@ def init_tk(root):
         format_reboot = "\n".join(reboot_command)
         run_command(format_reboot, entries['mgmt_ip'].get(), int(entries['port'].get()), entries['user'].get(), entries['pass'].get())
         print('Device is rebooting')
+        debug_box.insert(END, 'Device has rebooted\n')
     def reset_config():
         reset_command = []
         reset_cmd = 'system reset-configuration run-after-reset=flash/config.rsc no-defaults=yes'
@@ -104,103 +109,151 @@ def init_tk(root):
         reset_command.append(reset_cmd)
         format_reset = "\n".join(reset_command)
         run_command(format_reset, entries['mgmt_ip'].get(), int(entries['port'].get()), entries['user'].get(), entries['pass'].get())
+        print('Resetting device configuration and installing baseline config...')
+        debug_box.insert(END, 'Resetting device configuration and installing baseline config...\n')
     def clear_entries():
         for key, entry, in entries.items():
             entry.delete(0, 'end')
         config_entries.delete('0.0', 'end')
         firmware_entries.delete('0.0', 'end')
+        debug_box.delete('0.0', 'end')
     def send_commands():
         all_commands = []
-        cmd_str = gen_cmd_str_ip(entries['ip'].get(), interface_select.get())
-        all_commands.append(cmd_str)
-        cmd_str = gen_cmd_str_gw(entries['gateway'].get())
-        all_commands.append(cmd_str)
-        cmd_str = gen_cmd_str_id(entries['identity'].get())
-        all_commands.append(cmd_str)
-        cmd_str = gen_cmd_str_wpa(entries['wpa'].get())
-        all_commands.append(cmd_str)
-        cmd_str = gen_cmd_str_ssid1(entries['ssid1'].get())
-        all_commands.append(cmd_str)
-        cmd_str = gen_cmd_str_ssid2(entries['ssid2'].get())
-        all_commands.append(cmd_str)
+
+        if entries['ip'].get() != '':
+            cmd_str = gen_cmd_str_ip(entries['ip'].get(), interface_select.get())
+            all_commands.append(cmd_str)
+            debug_box.insert(END, '\nWAN IP address changed to: ', entries['ip'].get())
+        else:
+            debug_box.insert(END, 'Did not change WAN IP address\n')
+            print('Did not change WAN IP address')
+
+        if entries['gateway'].get() != '':
+            cmd_str = gen_cmd_str_gw(entries['gateway'].get())
+            all_commands.append(cmd_str)
+            debug_box.insert(END, '\nGateway IP address changed to: ', entries['gateway'].get())
+        else:
+            debug_box.insert(END, 'Did not change gateway IP address\n')
+            print('Did not change IP address')
+
+        if entries['identity'].get() != '':
+            if ' ' in entries['identity'].get():
+                debug_box.insert(END, 'Please remove space in Identity\n')
+                print('Please remove space in Identity')
+            else:
+                cmd_str = (gen_cmd_str_id(entries['identity'].get()))
+                all_commands.append(cmd_str) 
+                debug_box.insert(END, '\nIdentity changed to: ' + entries['identity'].get())     
+        else:
+            print('Did not change identity')
+
+        if entries['wpa'].get() != '' or len(entries['wpa'].get()) >=8:
+            cmd_str = gen_cmd_str_wpa(entries['wpa'].get())
+            all_commands.append(cmd_str)
+            debug_box.insert(END, '\nWPA passphrase changed to: ', entries['wpa'].get())
+        else:
+            debug_box.insert(END, 'Did not change WPA passphrase\n')
+            print('Did not change WPA passphrase')
+
+        if entries['ssid1'].get() != '':
+            cmd_str = gen_cmd_str_ssid1(entries['ssid1'].get())
+            all_commands.append(cmd_str)
+            debug_box.insert(END, '\n2.4Ghz SSID changed to: ', entries['ssid1'].get())
+        else:
+            debug_box.insert(END, 'Did not change 2.4 Ghz SSID\n')
+            print('Did not change 2.4 Ghz SSID')
+
+        if entries['ssid2'].get() != '':
+            cmd_str = gen_cmd_str_ssid2(entries['ssid2'].get())
+            all_commands.append(cmd_str)
+            debug_box.insert(END, '\n5Ghz SSID changed to: ', entries['ssid2'].get())
+        else:
+            debug_box.insert(END, 'Did not change 5Ghz Ghz SSID\n')
+            print('Did not change 5Ghz SSID')
+        
         formatted_commands = "\n".join(all_commands)
         run_command(formatted_commands, entries['mgmt_ip'].get(), int(entries['port'].get()), entries['user'].get(), entries['pass'].get())
     
-    root.geometry("825x315")
+    root.geometry("825x550")
     root.title("Lets get configuring!")
     root.eval('tk::PlaceWindow . center')
+    root.configure(background='snow2')
     entries = {}
-    mgmt_ip_label = Label(root, text='Management IP Address:', font=('calibre', 10, 'bold'))
+    mgmt_ip_label = Label(root, text='Management IP Address:*', font=('calibre', 10, 'bold'), bg='snow2', fg='forest green')
     entries['mgmt_ip'] = Entry(root, justify='center', font=('calibre', 10))
     mgmt_ip_label.grid(row=0, column=0, sticky = W, pady=2, padx=5)
     entries['mgmt_ip'].grid(row=0, column=1, pady=2)
-    port_label = Label(root, text='Management Port:', font=('calibre', 10, 'bold'))
+    port_label = Label(root, text='Management Port:*', font=('calibre', 10, 'bold'), bg='snow2', fg='forest green')
     entries['port'] = Entry(root, justify='center', font=('calibre', 10))
     port_label.grid(row=0, column=2, sticky=W, pady=2, padx=5)
     entries['port'].grid(row=0, column=3, pady=2)
-    user_label = Label(root, text='Username:', font=('calibre', 10, 'bold'))
+    user_label = Label(root, text='Username:*', font=('calibre', 10, 'bold'), bg='snow2', fg='forest green')
     entries['user'] = Entry(root, justify='center', font=('calibre', 10))
     user_label.grid(row=1, column=0, sticky=W, pady=2, padx=5)
     entries['user'].grid(row=1, column=1, pady=2)
-    pass_label = Label(root, text='Password:', font=('calibre', 10, 'bold'))
+    pass_label = Label(root, text='Password:*', font=('calibre', 10, 'bold'), bg='snow2', fg='forest green')
     entries['pass'] = Entry(root, justify='center', show='*', font=('calibre', 10))
     pass_label.grid(row = 1, column=2, sticky=W, pady=2, padx=5)
     entries['pass'].grid(row=1, column=3, pady=2)
-    ip_label = Label(root, text='WAN IP Address:', font=('calibre', 10, 'bold'))
+    ip_label = Label(root, text='WAN IP Address (CIDR):', font=('calibre', 10, 'bold'), bg='snow2', fg='black')
     entries['ip'] = Entry(root, justify='center', font=('calibre', 10))
-    ip_label.grid(row=2, column=0, sticky=W, pady=2, padx=5)
-    entries['ip'].grid(row= 2, column=1, pady=2)
+    ip_label.grid(row=3, column=0, sticky=W, pady=2, padx=5)
+    entries['ip'].grid(row= 3, column=1, pady=2)
     interface_list = ['ether1', 'ether2', 'ether3', 'ether4', 'ether5', 'ether6', 'ether7', 'ether8', 'ether9', 'ether10', 'wlan1', 'wlan2', 'sfp1', 'sfp+plus1']
     interface_select = StringVar(root)
     interface_select.set(interface_list[0])
-    interface_label = Label(root, text = 'WAN Interface:', font=('calibre', 10, 'bold'))
+    interface_label = Label(root, text = 'WAN Interface:', font=('calibre', 10, 'bold'), bg='snow2', fg='black')
     interface_drop = OptionMenu(root, interface_select, *interface_list)
-    interface_label.grid(row=3, column=0, sticky=W, pady=2, padx=5)
-    interface_drop.grid(row=3, column=1, pady=2)
-    gateway_label = Label(root, text='Default Gateway:', font=('calibre', 10, 'bold'))
+    interface_label.grid(row=4, column=0, sticky=W, pady=2, padx=5)
+    interface_drop.grid(row=4, column=1, pady=2)
+    gateway_label = Label(root, text='Default Gateway:', font=('calibre', 10, 'bold'), bg='snow2', fg='black')
     entries['gateway']=Entry(root, justify='center', font=('calibre', 10))
-    gateway_label.grid(row=4, column=0, sticky=W, pady=2, padx=5)
-    entries['gateway'].grid(row=4, column=1, pady=2)
-    identity_label = Label(root, text='Identity:', font=('calibre', 10, 'bold'))
+    gateway_label.grid(row=5, column=0, sticky=W, pady=2, padx=5)
+    entries['gateway'].grid(row=5, column=1, pady=2)
+    identity_label = Label(root, text='Identity:', font=('calibre', 10, 'bold'), bg='snow2', fg='black')
     entries['identity'] = Entry(root, justify='center', font=('calibre', 10))
-    identity_label.grid(row=5, column=0, sticky=W, pady=2, padx=5)
-    entries['identity'].grid(row=5, column=1, pady=2)
-    wpa_label = Label(root, text='WiFi Password:', font=('calibre', 10, 'bold'))
+    identity_label.grid(row=6, column=0, sticky=W, pady=2, padx=5)
+    entries['identity'].grid(row=6, column=1, pady=2)
+    wpa_label = Label(root, text='WiFi Password:', font=('calibre', 10, 'bold'), bg='snow2', fg='black')
     entries['wpa'] = Entry(root, justify='center', show='*', font=('calibre', 10))
-    wpa_label.grid(row = 6, column=0, sticky=W, pady=2, padx=5)
-    entries['wpa'].grid(row=6, column=1, pady=2)
-    ssid1_label = Label(root, text='2.4Ghz SSID:', font=('calibre', 10, 'bold'))
+    wpa_label.grid(row =7, column=0, sticky=W, pady=2, padx=5)
+    entries['wpa'].grid(row=7, column=1, pady=2)
+    ssid1_label = Label(root, text='2.4Ghz SSID:', font=('calibre', 10, 'bold'), bg='snow2', fg='black')
     entries['ssid1'] = Entry(root, justify='center', font=('calibre', 10))
-    ssid1_label.grid(row=7, column=0, sticky=W, pady=2, padx=5)
-    entries['ssid1'].grid(row=7, column=1, pady=2)
-    ssid2_label = Label(root, text='5Ghz SSID:', font=('calibre', 10, 'bold'))
+    ssid1_label.grid(row=8, column=0, sticky=W, pady=2, padx=5)
+    entries['ssid1'].grid(row=8, column=1, pady=2)
+    ssid2_label = Label(root, text='5Ghz SSID:', font=('calibre', 10, 'bold'), bg='snow2', fg='black')
     entries['ssid2'] = Entry(root, justify='center', font=('calibre', 10))
-    ssid2_label.grid(row=8, column=0, sticky=W, pady=2, padx=5)
-    entries['ssid2'].grid(row=8, column=1, pady=2)
+    ssid2_label.grid(row=9, column=0, sticky=W, pady=2, padx=5)
+    entries['ssid2'].grid(row=9, column=1, pady=2)
     submit_button = Button(root, text='Submit', command=send_commands)
-    submit_button.grid(row=9, column=2, sticky=W, pady=10, padx=5)
+    submit_button.grid(row=12, column=2, sticky=W, pady=10, padx=5)
     clear_button = Button(root, text='Clear', command=clear_entries)
-    clear_button.grid(row=9, column=1, sticky=E, pady=10, padx=5)
+    clear_button.grid(row=12, column=1, sticky=E, pady=10, padx=5)
     config_entries = Text(root, height=1, width=20, font=('calibre', 10))
-    config_entries.grid(row=3, column=3, sticky=N, columnspan=2, pady=2, padx=5)
-    config_label = Label(root, text='Upload Configuration File:', font=('calibre', 10, 'bold'))
-    config_label.grid(row=2, column=2, sticky=N, pady=2, padx=5)
+    config_entries.grid(row=4, column=3, sticky=N, columnspan=2, pady=2, padx=5)
+    config_label = Label(root, text='Upload Configuration File:', font=('calibre', 10, 'bold'), bg='snow2', fg='black')
+    config_label.grid(row=4, column=2, sticky=N, pady=2, padx=5)
     config_button = Button(root, text='Select', command=select_config)
-    config_button.grid(row=3, column=2, sticky=W, pady=2, padx=5)
+    config_button.grid(row=5, column=2, sticky=W, pady=2, padx=5)
     upload_button = Button(root, text='Upload', command=upload_config)
-    upload_button.grid(row=3, column=2, sticky=E, pady=2, padx=5)
+    upload_button.grid(row=5, column=2, sticky=E, pady=2, padx=5)
     firmware_entries = Text(root, height=1, width=20, font=('calibre', 10))
-    firmware_entries.grid(row=5, column=3, sticky=N, columnspan=2, pady=2, padx=5)
-    firmware_label = Label(root, text='Upload Firmware File:', font=('calibre', 10, 'bold'))
-    firmware_label.grid(row=4, column=2, sticky=W, pady=2, padx=5)
+    firmware_entries.grid(row=6, column=3, sticky=N, columnspan=2, pady=2, padx=5)
+    firmware_label = Label(root, text='Upload Firmware File:', font=('calibre', 10, 'bold'), bg='snow2', fg='black')
+    firmware_label.grid(row=6, column=2, sticky=W, pady=2, padx=5)
     firmware_select_button = Button(root, text='Select', command=select_firmware)
-    firmware_select_button.grid(row=5, column=2, sticky=W, pady=2, padx=5)
+    firmware_select_button.grid(row=7, column=2, sticky=W, pady=2, padx=5)
     firmware_upload_button = Button(root, text='Upload', command=upload_firmware)
-    firmware_upload_button.grid(row=5, column=2, sticky=E, pady=2, padx=5)
+    firmware_upload_button.grid(row=7, column=2, sticky=E, pady=2, padx=5)
     reboot_button = Button(root, text='Reboot', command=reboot_device)
-    reboot_button.grid(row=6, column=3, sticky=N, pady=2, padx=5)
+    reboot_button.grid(row=8, column=3, sticky=N, pady=2, padx=5)
     reset_button = Button(root, text='Run', command=reset_config)
-    reset_button.grid(row=4, column=3, sticky=N, pady=2, padx=5)
+    reset_button.grid(row=5, column=3, sticky=N, pady=2, padx=5)
+    debug_lable = Label(root, text='Debug Console:', font=('calibre', 10, 'bold'), bg='snow2', fg='black')
+    debug_lable.grid(row=10, column=0, sticky=W, pady=2, padx=5)
+    debug_box = Text(root, height=10, width=75, font=('calibre', 10))
+    debug_box.grid(row=11, column=0, sticky=N, columnspan=5, pady=2, padx=2)
 
 def main():
     root = Tk()
