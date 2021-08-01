@@ -3,7 +3,8 @@
 Mikrotik Configuration Manager is a Python utility for better configuration and management. The utility uses SSH to configure the device and is intended as a replacement for quickset. This is an ongoing project that will help ISP/WISP/MSP installers and network administrators speed up their time till installtion. 
 
 
-![MikrotikAutoConfigUtilityFinal](https://user-images.githubusercontent.com/87310427/126878739-ee7b9924-74db-4762-ba4c-ffef9a3640bc.png)
+![MikrotikAutoConfigUtilityv0 3 0](https://user-images.githubusercontent.com/87310427/127784200-2088bdf7-1ae6-48dc-aa11-99a5f78560a4.png)
+
 
 ## Installation
 
