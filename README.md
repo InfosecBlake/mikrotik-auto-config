@@ -59,7 +59,7 @@ If you do not add the above line, the configuration utility of the program will 
 - Ability to upload baseline configurations and scripts - **Complete**
 - Ability to update and reboot devices - **Complete**
 - Reformat of the GUI for easier navigation and usage
-- Debugging and checks/balances **Complete**
+- Debugging and checks/balances - **Complete**
 - Check connection - ICMP check to device
 - Making tool executable
 - Device detection, think similar to CDP neighbors
