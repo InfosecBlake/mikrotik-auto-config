@@ -2,7 +2,6 @@ import paramiko
 
 from tkinter import *
 from tkinter import filedialog
-import time
 
 
 def run_command(cmd_str, hostname, port, username, password, nbytes=4096):
